@@ -1,0 +1,314 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mutual Fund Allocation Calculator</title>
+  <style>
+    :root{ --bg:#0b1220; --card:#121a2b; --ink:#e7eefc; --muted:#a9b3c7; --brand:#4f8cff; --ok:#1ec28b; --warn:#ffb020; --err:#ff6161; --border:#23304b; --chip:#15233b; }
+    *{box-sizing:border-box}
+    body{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Helvetica Neue";
+      background: radial-gradient(1200px 800px at 10% -10%, #1b2844 0%, transparent 50%), radial-gradient(1000px 1000px at 100% 0%, #1a2a4a 0%, transparent 40%), var(--bg); color:var(--ink); }
+    .wrap{ max-width: 1100px; margin: 40px auto; padding: 0 20px;}
+    header h1{ margin: 0 0 8px; font-size: clamp(22px, 4vw, 32px); letter-spacing: .2px;}
+    header p{ margin:0; color:var(--muted); }
+
+    .card{ margin-top: 20px; background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0)) , var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,.25); overflow: hidden; }
+
+    .toolbar{ display:flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 16px; border-bottom:1px solid var(--border);} 
+    .toolbar .field{ display:flex; flex-direction: column; gap:6px; }
+    .toolbar label{ font-size: 12px; color: var(--muted); }
+
+    /* Inputs */
+    .text-input, .num-input, .select-input{ width: 100%; background: var(--chip); color: var(--ink); border:1px solid var(--border); border-radius:10px; padding:10px 12px; outline:none; }
+    .num-input{ text-align:right; padding-right: 52px; /* room for custom steppers */ }
+    .text-input:focus, .num-input:focus, .select-input:focus{ border-color: var(--brand);} 
+
+    /* Hide native spinners */
+    input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
+    input[type=number]{ -moz-appearance: textfield; }
+
+    .num-wrap{ position: relative; }
+    .stepper{ position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display:flex; flex-direction: column; gap:6px; }
+    .stepper button{ width: 34px; height: 22px; border:1px solid var(--border); background: linear-gradient(180deg, rgba(79,140,255,.18), rgba(79,140,255,.06)); color: var(--ink); border-radius:6px; cursor:pointer; line-height:1; display:flex; align-items:center; justify-content:center; font-weight:700; }
+    .stepper button:hover{ border-color: var(--brand); box-shadow: 0 0 0 2px rgba(79,140,255,.15) inset; }
+
+    .btn{ cursor:pointer; border:1px solid var(--border); background:linear-gradient(180deg, rgba(79,140,255,.2), rgba(79,140,255,.05)); color:var(--ink); padding:10px 14px; border-radius: 10px; display:inline-flex; align-items:center; gap:8px; font-weight:600; }
+    .btn:hover{ border-color: var(--brand); box-shadow: 0 0 0 3px rgba(79,140,255,.15) inset; }
+    .btn.secondary{ background: var(--chip);}  .btn.success{ background: linear-gradient(180deg, rgba(30,194,139,.25), rgba(30,194,139,.07)); border-color: #2a6b59;}
+
+    .notice{ padding: 10px 16px; border-top: 1px dashed var(--border); color: var(--muted); font-size: 13px;}
+
+    table{ width:100%; border-collapse: collapse; }
+    thead th{ text-align:left; font-weight:700; color: var(--muted); letter-spacing:.3px; font-size: 12px; padding: 12px 14px; border-bottom:1px solid var(--border);} 
+    tbody td{ padding: 10px 14px; border-bottom:1px dashed var(--border);} 
+    tfoot td{ padding: 12px 14px; border-top:2px solid var(--border); font-weight:700;}
+
+    .num{ text-align:right; }
+    .idx{ color: var(--muted); width: 48px;}
+
+    .row-actions{ display:flex; gap:8px;}
+    .chip{ font-size: 12px; padding: 4px 8px; background: var(--chip); border:1px solid var(--border); border-radius: 999px; color: var(--muted);} 
+
+    .error{ color: var(--err); } .success{ color: var(--ok); }
+
+    .footer-actions{ display:flex; gap: 10px; padding: 14px 16px;}
+
+    /* FIRE section helpers */
+    .section-body{ padding: 12px 14px; }
+    .form-grid{ display:grid; grid-template-columns: 1fr; gap:12px; }
+    @media(min-width:860px){ .form-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .kv{ display:flex; flex-direction:column; gap:6px; }
+    .kv label{ font-size:12px; color:var(--muted); }
+    .out{ display:flex; align-items:center; justify-content:space-between; border:1px dashed var(--border); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)); padding:10px 12px; border-radius:10px; }
+    .out small{ color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Mutual Fund Allocation Calculator</h1>
+      <p>Enter a total amount and define your mutual funds with percentage allocations. The table computes the investment per fund in real time. Your entries are saved locally in your browser.</p>
+    </header>
+
+    <section class="card" aria-labelledby="calc-heading">
+      <div class="toolbar">
+        <div class="field">
+          <label for="totalAmount">Total Investment Amount</label>
+          <div class="num-wrap">
+            <input id="totalAmount" class="num-input" type="number" min="0" step="0.01" data-stepkind="amount" placeholder="e.g., 100000" />
+            <div class="stepper" data-for="totalAmount"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="currency">Currency</label>
+          <select id="currency" class="select-input" aria-label="Currency">
+            <option value="INR" selected>₹ INR</option>
+            <option value="USD">$ USD</option>
+            <option value="EUR">€ EUR</option>
+            <option value="GBP">£ GBP</option>
+          </select>
+        </div>
+        <button class="btn" id="addRowBtn" title="Add a mutual fund row">➕ Add Fund</button>
+        <button class="btn secondary" id="eqSplitBtn" title="Distribute 100% equally across funds">⚖️ Distribute Equally</button>
+        <button class="btn success" id="clearBtn" title="Clear all rows and reset">🧹 Clear All</button>
+      </div>
+
+      <div class="notice" id="statusLine">Tip: If percentages don't add up to 100%, the amounts will be proportional to the entered percentages. Use <b>Distribute Equally</b> to auto-fill 100%.</div>
+
+      <div style="overflow-x:auto">
+        <table aria-describedby="statusLine">
+          <thead>
+            <tr>
+              <th class="idx">#</th>
+              <th>Fund Name</th>
+              <th class="num">Allocation (%)</th>
+              <th class="num">Calculated Amount</th>
+              <th class="num">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="fundBody">
+          </tbody>
+          <tfoot>
+            <tr>
+              <td></td>
+              <td>Total</td>
+              <td class="num"><span id="totalPct">0</span>%</td>
+              <td class="num"><span id="totalAmt">0</span></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="footer-actions">
+        <span class="chip" id="saveBadge">Auto-saved</span>
+        <span class="chip" id="sumBadge">Sum: <span id='sumPctBadge'>0</span>%</span>
+      </div>
+    </section>
+
+    <p class="notice">Note: All data is stored only in your browser (LocalStorage). No data is transmitted.</p>
+
+    <!-- FIRE PLANNER SECTION -->
+    <section class="card" aria-labelledby="fire-heading">
+      <h2 id="fire-heading" style="margin:0; padding:14px 16px; border-bottom:1px solid var(--border); font-size:18px;">FIRE Planner <span class="chip">Retirement target & SIP</span></h2>
+      <div class="section-body">
+        <div class="form-grid">
+          <div class="kv">
+            <label for="fire-exp">Current Monthly Expenses</label>
+            <div class="num-wrap">
+              <input id="fire-exp" class="num-input" type="number" min="0" step="0.01" data-stepkind="amount" placeholder="e.g., 50000" />
+              <div class="stepper" data-for="fire-exp"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
+            </div>
+          </div>
+          <div class="kv">
+            <label for="fire-inf">Inflation (annual %)</label>
+            <div class="num-wrap">
+              <input id="fire-inf" class="num-input" type="number" min="0" step="0.1" data-stepkind="pct" value="6" />
+              <div class="stepper" data-for="fire-inf"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
+            </div>
+          </div>
+          <div class="kv">
+            <label for="fire-years">Years to Retirement</label>
+            <div class="num-wrap">
+              <input id="fire-years" class="num-input" type="number" min="1" step="1" data-stepkind="years" value="15" />
+              <div class="stepper" data-for="fire-years"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
+            </div>
+          </div>
+          <div class="kv">
+            <label for="fire-ret">Expected Return (annual %, during accumulation)</label>
+            <div class="num-wrap">
+              <input id="fire-ret" class="num-input" type="number" min="0" step="0.1" data-stepkind="pct" value="12" />
+              <div class="stepper" data-for="fire-ret"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
+            </div>
+          </div>
+          <div class="kv">
+            <label for="fire-stepup">Step-up SIP (% per year)</label>
+            <div class="num-wrap">
+              <input id="fire-stepup" class="num-input" type="number" min="0" step="0.1" data-stepkind="pct" value="0" />
+              <div class="stepper" data-for="fire-stepup"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
+            </div>
+          </div>
+          <div class="kv">
+            <label for="fire-curr">Current Portfolio Amount</label>
+            <div class="num-wrap">
+              <input id="fire-curr" class="num-input" type="number" min="0" step="0.01" data-stepkind="amount" placeholder="e.g., 3000000" />
+              <div class="stepper" data-for="fire-curr"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; display:grid; gap:10px;">
+          <div class="out"><small>Projected Monthly Expense at Retirement</small><strong id="fire-exp-ret">–</strong></div>
+          <div class="out"><small>FIRE Number (Target Corpus)</small><strong id="fire-corpus">–</strong></div>
+          <div class="out"><small>Required Monthly SIP <span id="fire-sip-label">(Base, Year 1)</span></small><strong id="fire-sip">–</strong></div>
+        </div>
+        <div class="notice">Assumptions: monthly compounding; SIP at end of month; FIRE number uses a default 4% safe withdrawal rate (SWR). Adjust any inputs above.</div>
+        <div class="notice" id="fire-explain" style="border-top:1px dashed var(--border); margin-top:8px;">
+          <strong>How this is calculated & a suggested plan:</strong><br/>
+          We project your monthly expenses to retirement using your inflation rate. Your FIRE number is the annualised expense at retirement divided by a 4% safe withdrawal rate—meaning a 4% draw from the corpus aims to sustain those expenses. To reach this corpus, we compute a monthly SIP based on your expected return and years to retire. If you add a step-up %, the SIP grows each year and the required starting SIP is lower. We also account for your <em>current portfolio amount</em>, compounding it to retirement and reducing the target accordingly. As a practical plan: keep 12–18 months of expenses in liquid/low-risk instruments, invest surplus via SIPs in a diversified mix of equity index funds and debt funds, review allocations annually, and gradually de-risk as retirement approaches.
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    (function(){
+      const fundBody = document.getElementById('fundBody');
+      const totalAmountEl = document.getElementById('totalAmount');
+      const currencyEl = document.getElementById('currency');
+      const totalPctEl = document.getElementById('totalPct');
+      const totalAmtEl = document.getElementById('totalAmt');
+      const statusLine = document.getElementById('statusLine');
+      const sumPctBadge = document.getElementById('sumPctBadge');
+      const saveBadge = document.getElementById('saveBadge');
+
+      // FIRE refs
+      const fireExpEl = document.getElementById('fire-exp');
+      const fireInfEl = document.getElementById('fire-inf');
+      const fireYearsEl = document.getElementById('fire-years');
+      const fireRetEl = document.getElementById('fire-ret');
+      const fireStepEl = document.getElementById('fire-stepup');
+      const fireCurrEl = document.getElementById('fire-curr');
+
+      const fireExpRetEl = document.getElementById('fire-exp-ret');
+      const fireCorpusEl = document.getElementById('fire-corpus');
+      const fireSIPel = document.getElementById('fire-sip');
+
+      const DEFAULT_SWR = 0.04; // 4%
+      const stateKey = 'mfAllocatorState.v1';
+
+      const currencyFormatters = {
+        'INR': new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }),
+        'USD': new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }),
+        'EUR': new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }),
+        'GBP': new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 2 })
+      };
+      function fmtCurrency(value){ const cur = currencyEl.value || 'INR'; const f = currencyFormatters[cur] || currencyFormatters['INR']; return f.format(isFinite(value)?value:0); }
+
+      function readRows(){ return [...fundBody.querySelectorAll('tr')].map(tr => { const name = tr.querySelector('.fund-name')?.value?.trim()||''; const pct = parseFloat(tr.querySelector('.fund-pct')?.value); return { name, pct: isFinite(pct) ? pct : 0 }; }); }
+
+      function saveState(){ const data = { total: parseFloat(totalAmountEl.value) || 0, currency: currencyEl.value, funds: readRows(), fire: { exp: parseFloat(fireExpEl.value)||0, inf: parseFloat(fireInfEl.value)||6, yrs: parseInt(fireYearsEl.value)||15, ret: parseFloat(fireRetEl.value)||12, step: parseFloat(fireStepEl.value)||0, curr: parseFloat(fireCurrEl.value)||0 } }; localStorage.setItem(stateKey, JSON.stringify(data)); saveBadge.textContent='Saved'; setTimeout(()=>saveBadge.textContent='Auto-saved',1200); }
+      function loadState(){ try{ const raw = localStorage.getItem(stateKey); return raw?JSON.parse(raw):null; }catch(e){ return null; } }
+
+      function addRow(fund={name:'', pct:0}){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="idx"></td>
+          <td><input class="text-input fund-name" type="text" placeholder="e.g., HDFC Flexi Cap" value="${(fund.name||'').replaceAll('"','&quot;')}" /></td>
+          <td class="num">
+            <div class="num-wrap">
+              <input class="num-input fund-pct" type="number" min="0" step="0.01" data-stepkind="pct" value="${isFinite(fund.pct)?fund.pct:0}" />
+              <div class="stepper" data-for="inline"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
+            </div>
+          </td>
+          <td class="num amount-cell">${fmtCurrency(0)}</td>
+          <td class="num row-actions"><button class="btn secondary btn-remove">🗑️ Remove</button></td>`;
+        fundBody.appendChild(tr);
+        const pctInput = tr.querySelector('.fund-pct');
+        attachInlineStepper(pctInput);
+        attachKeyStep(pctInput);
+        tr.querySelector('.fund-name').addEventListener('input', recalc);
+        pctInput.addEventListener('input', recalc);
+        tr.querySelector('.btn-remove').addEventListener('click', () => { tr.remove(); renumber(); recalc(); });
+        renumber();
+        return tr;
+      }
+
+      function renumber(){ [...fundBody.querySelectorAll('tr')].forEach((tr, i) => { tr.querySelector('.idx').textContent = i+1; }); }
+
+      function distributeEqually(){ const rows = [...fundBody.querySelectorAll('tr')]; const n = rows.length || 1; let base = Math.floor((10000 / n)) / 100; let remainder = +(100 - base*n).toFixed(2); rows.forEach((tr, i) => { let p = base + (i === rows.length-1 ? remainder : 0); tr.querySelector('.fund-pct').value = p.toFixed(2); }); recalc(); }
+
+      function proportionalAmounts(total, rows){ const sumPct = rows.reduce((s,r)=>s+r.pct,0); if(sumPct <= 0) return rows.map(_=>0); return rows.map(r => total * (r.pct / sumPct)); }
+
+      function recalc(){ const total = parseFloat(totalAmountEl.value) || 0; const rows = readRows(); const sumPct = rows.reduce((s,r)=> s + (isFinite(r.pct)?r.pct:0), 0);
+        const amounts = (Math.abs(sumPct - 100) < 0.0001) ? rows.map(r => total * (r.pct/100)) : proportionalAmounts(total, rows);
+        [...fundBody.querySelectorAll('tr')].forEach((tr, i) => { const amtCell = tr.querySelector('.amount-cell'); const amt = amounts[i] || 0; amtCell.textContent = fmtCurrency(amt); });
+        totalPctEl.textContent = sumPct.toFixed(2).replace(/\.00$/,''); totalAmtEl.textContent = fmtCurrency(amounts.reduce((a,b)=>a+b,0)); sumPctBadge.textContent = sumPct.toFixed(2).replace(/\.00$/,'');
+        if(sumPct === 100) { statusLine.innerHTML = '<span class="success">✅ Perfect! Allocations sum to 100%.</span>'; }
+        else if(sumPct === 0) { statusLine.innerHTML = '<span class="error">Enter allocation percentages or use <b>Distribute Equally</b>.</span>'; }
+        else if(sumPct < 100) { statusLine.innerHTML = `<span class="warn">⚠️ Allocations sum to ${sumPct.toFixed(2)}%. Amounts are scaled proportionally.</span>`; }
+        else { statusLine.innerHTML = `<span class="warn">⚠️ Allocations exceed 100% ( ${sumPct.toFixed(2)}% ). Amounts are scaled proportionally.</span>`; }
+        calcFIRE(); saveState(); }
+
+      function clearAll(){ fundBody.innerHTML = ''; totalAmountEl.value = ''; addRow(); addRow(); addRow(); recalc(); }
+
+      // === FIRE math with current portfolio offset ===
+      function calcFIRE(){ const exp = parseFloat(fireExpEl.value)||0; const inf = (parseFloat(fireInfEl.value)||6)/100; const yrs = Math.max(1, parseInt(fireYearsEl.value)||15); const ret = (parseFloat(fireRetEl.value)||12)/100; const step = (parseFloat(fireStepEl.value)||0)/100; const curr = parseFloat(fireCurrEl.value)||0; const expAtRet = exp * Math.pow(1+inf, yrs); fireExpRetEl.textContent = fmtCurrency(expAtRet); const corpus = (expAtRet * 12) / DEFAULT_SWR; fireCorpusEl.textContent = fmtCurrency(corpus); const m = yrs*12; const i = ret/12; const currentFV = curr * Math.pow(1+i, m); const neededFV = Math.max(0, corpus - currentFV);
+        function sipForStepup(stepPct){ if(neededFV<=0) return 0; if(stepPct<=0){ const den = (Math.pow(1+i, m)-1)/(i>0?i:1); return neededFV/(den>0?den:1);} let sumFactor=0; for(let t=0;t<m;t++){ const y=Math.floor(t/12); sumFactor += Math.pow(1+stepPct,y)*Math.pow(1+i,m-1-t);} return neededFV/(sumFactor>0?sumFactor:1);} const sip = sipForStepup(step); fireSIPel.textContent = fmtCurrency(sip); }
+
+      // Custom steppers (buttons)
+      function attachStepperFor(id){ const wrap = document.querySelector(`.stepper[data-for="${id}"]`); if(!wrap) return; const input = document.getElementById(id); if(!input) return; const [up,down] = wrap.querySelectorAll('button'); up.addEventListener('click', ()=> stepInput(input, +1)); down.addEventListener('click', ()=> stepInput(input, -1)); attachKeyStep(input); }
+      function attachInlineStepper(input){ const wrap = input?.closest('.num-wrap')?.querySelector('.stepper'); if(!wrap) return; const [up,down] = wrap.querySelectorAll('button'); up.addEventListener('click', ()=> stepInput(input, +1)); down.addEventListener('click', ()=> stepInput(input, -1)); }
+
+      // Keyboard arrows override: +1 for years & pct, +1000 for amount
+      function attachKeyStep(input){ input.addEventListener('keydown', (e)=>{ if(e.key==='ArrowUp'){ e.preventDefault(); stepInput(input, +1); } else if(e.key==='ArrowDown'){ e.preventDefault(); stepInput(input, -1); } }); }
+
+      function computeDelta(input){ const kind = input.getAttribute('data-stepkind'); if(kind==='amount') return 1000; if(kind==='years') return 1; if(kind==='pct') return 1; const def = parseFloat(input.step)||1; return def; }
+      function stepInput(input, dir){ const delta = computeDelta(input); const min = (input.min!==''?parseFloat(input.min):-Infinity); const max = (input.max!==''?parseFloat(input.max):Infinity); const cur = parseFloat(input.value||'0')||0; let next = cur + dir*delta; if(next<min) next=min; if(next>max) next=max; input.value = (Math.round(next*100000)/100000).toString(); input.dispatchEvent(new Event('input', {bubbles:true})); }
+
+      // Hook buttons and listeners
+      document.getElementById('addRowBtn').addEventListener('click', ()=>{ addRow(); recalc(); });
+      document.getElementById('eqSplitBtn').addEventListener('click', distributeEqually);
+      document.getElementById('clearBtn').addEventListener('click', () => { localStorage.removeItem(stateKey); clearAll(); });
+      totalAmountEl.addEventListener('input', recalc); currencyEl.addEventListener('change', ()=>{ recalc(); calcFIRE(); });
+      [fireExpEl, fireInfEl, fireYearsEl, fireRetEl, fireStepEl, fireCurrEl].forEach(el => el.addEventListener('input', ()=>{ calcFIRE(); saveState(); }));
+
+      // Init
+      const saved = loadState();
+      if(saved){ totalAmountEl.value = saved.total || ''; currencyEl.value = saved.currency || 'INR'; if(saved.funds && saved.funds.length){ saved.funds.forEach(f => addRow(f)); } else { addRow(); addRow(); addRow(); } if(saved.fire){ fireExpEl.value = saved.fire.exp ?? ''; fireInfEl.value = saved.fire.inf ?? 6; fireYearsEl.value = saved.fire.yrs ?? 15; fireRetEl.value = saved.fire.ret ?? 12; fireStepEl.value = saved.fire.step ?? 0; fireCurrEl.value = saved.fire.curr ?? 0; } }
+      else { addRow({name:'Bluechip Fund', pct:40}); addRow({name:'Midcap Fund', pct:35}); addRow({name:'Debt Fund', pct:25}); fireExpEl.value = 50000; fireInfEl.value = 6; fireYearsEl.value = 15; fireRetEl.value = 12; fireStepEl.value = 0; fireCurrEl.value = 0; }
+
+      // attach steppers + keyboard for top + FIRE fields
+      ['totalAmount','fire-exp','fire-inf','fire-years','fire-ret','fire-stepup','fire-curr'].forEach(attachStepperFor);
+
+      // also attach keyboard arrow override to top amount
+      attachKeyStep(totalAmountEl);
+
+      recalc(); calcFIRE();
+    })();
+  </script>
+</body>
+</html>
