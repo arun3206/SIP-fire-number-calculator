@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Block common irrelevant paths (none yet, add if needed)
+# Disallow: /private/
+
+Sitemap: https://arun3206.github.io/SIP-fire-number-calculator/sitemap.xml
