@@ -27,7 +27,7 @@
 
     /* Hide native spinners */
     input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
-    input[type=number]{ -moz-appearance: textfield; }
+  input[type=number]{ -moz-appearance: textfield; appearance: none; }
 
     .num-wrap{ position: relative; }
     .stepper{ position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display:flex; flex-direction: column; gap:6px; }
@@ -63,6 +63,50 @@
     .kv label{ font-size:12px; color:var(--muted); }
     .out{ display:flex; align-items:center; justify-content:space-between; border:1px dashed var(--border); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)); padding:10px 12px; border-radius:10px; }
     .out small{ color:var(--muted); }
+
+    /* Accessibility helpers */
+    .visually-hidden{ position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0 0 0 0) !important; white-space:nowrap !important; border:0 !important; }
+
+    /* Mobile responsiveness */
+    @media (max-width: 680px){
+      body{ font-size:15px; }
+      .wrap{ margin:20px auto; padding:0 14px; }
+      .toolbar{ flex-direction: column; align-items: stretch; }
+      .toolbar .field{ width:100%; }
+      .toolbar .field .num-wrap{ width:100%; }
+      .toolbar .btn{ width:100%; justify-content:center; }
+      .footer-actions{ flex-direction:column; }
+      .footer-actions .chip{ width:100%; text-align:center; }
+      /* Table -> stacked cards */
+      table{ border:0; }
+      thead, tfoot{ display:none; }
+      tbody tr{ display:block; border:1px solid var(--border); margin-bottom:12px; border-radius:12px; background:var(--chip); padding:8px 10px; }
+      tbody tr .idx{ display:none; }
+      tbody td{ display:flex; align-items:center; padding:6px 4px; border-bottom:0; }
+      tbody td.amount-cell{ justify-content:space-between; }
+      tbody td.amount-cell::before{ content:'Amount'; font-size:12px; color:var(--muted); }
+      tbody td:nth-child(2){ width:100%; }
+      tbody td:nth-child(3){ width:100%; }
+      tbody td:nth-child(4){ width:100%; }
+      .row-actions{ width:100%; justify-content:flex-end; }
+      .row-actions .btn{ flex:1; }
+      .notice{ font-size:12px; }
+      .num-input{ padding:12px 14px; }
+      .stepper{ right:8px; }
+      .card{ margin-top:24px; box-shadow: 0 10px 24px rgba(0,0,0,.35); }
+      /* FIRE grid adjustments */
+      .form-grid{ grid-template-columns: 1fr; }
+      .kv label{ font-size:11px; }
+      .out{ flex-direction:column; align-items:flex-start; gap:4px; }
+      .out strong{ font-size:16px; }
+    }
+    /* Larger mobile / small tablets */
+    @media (min-width:681px) and (max-width:859px){
+      .toolbar{ flex-wrap:wrap; }
+      .toolbar .field{ flex:1 1 180px; }
+      .toolbar .btn{ flex:1 1 160px; }
+      .form-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
   </style>
 </head>
 <body>
@@ -90,12 +134,9 @@
             <option value="GBP">£ GBP</option>
           </select>
         </div>
-        <button class="btn" id="addRowBtn" title="Add a mutual fund row">➕ Add Fund</button>
-        <button class="btn secondary" id="eqSplitBtn" title="Distribute 100% equally across funds">⚖️ Distribute Equally</button>
-        <button class="btn success" id="clearBtn" title="Clear all rows and reset">🧹 Clear All</button>
       </div>
 
-      <div class="notice" id="statusLine">Tip: If percentages don't add up to 100%, the amounts will be proportional to the entered percentages. Use <b>Distribute Equally</b> to auto-fill 100%.</div>
+      <div class="notice" id="statusLine">Static model: preset fund allocation totals 100%. Enter amount to see distribution.</div>
 
       <div style="overflow-x:auto">
         <table aria-describedby="statusLine">
@@ -105,16 +146,58 @@
               <th>Fund Name</th>
               <th class="num">Allocation (%)</th>
               <th class="num">Calculated Amount</th>
-              <th class="num">Actions</th>
+              <th class="num">Details</th>
             </tr>
           </thead>
           <tbody id="fundBody">
+            <tr data-pct="30">
+              <td class="idx">1</td>
+              <td>Parak Parekh Flexi Cap Fund</td>
+              <td class="num pct-cell">30%</td>
+              <td class="num amount-cell">–</td>
+              <td class="num"><a class="btn secondary" href="https://www.moneycontrol.com/mutual-funds/nav/parag-parikh-flexi-cap-fund-direct-plan/MPP002" target="_blank" rel="noopener" aria-label="Parak Parekh Flexi Cap Fund details">🔗 Details</a></td>
+            </tr>
+            <tr data-pct="25">
+              <td class="idx">2</td>
+              <td>UTI Nifty Fifty Index Fund</td>
+              <td class="num pct-cell">25%</td>
+              <td class="num amount-cell">–</td>
+              <td class="num"><a class="btn secondary" href="https://www.moneycontrol.com/mutual-funds/nav/uti-nifty-50-index-fund-regular-plan-/MUT029" target="_blank" rel="noopener" aria-label="UTI Nifty Fifty Index Fund details">🔗 Details</a></td>
+            </tr>
+            <tr data-pct="10">
+              <td class="idx">3</td>
+              <td>Axis ELSS Fund</td>
+              <td class="num pct-cell">10%</td>
+              <td class="num amount-cell">–</td>
+              <td class="num"><a class="btn secondary" href="https://www.moneycontrol.com/mutual-funds/nav/axis-elss-tax-saver-fund-direct-plan-growth/MAA192" target="_blank" rel="noopener" aria-label="Axis ELSS Fund details">🔗 Details</a></td>
+            </tr>
+            <tr data-pct="15">
+              <td class="idx">4</td>
+              <td>Nippon India Midcap Fund</td>
+              <td class="num pct-cell">15%</td>
+              <td class="num amount-cell">–</td>
+              <td class="num"><a class="btn secondary" href="https://www.moneycontrol.com/mutual-funds/nav/nippon-india-growth-fund-direct-plan/MRC919" target="_blank" rel="noopener" aria-label="Nippon India Midcap Fund details">🔗 Details</a></td>
+            </tr>
+            <tr data-pct="10">
+              <td class="idx">5</td>
+              <td>Axis Small Cap Fund</td>
+              <td class="num pct-cell">10%</td>
+              <td class="num amount-cell">–</td>
+              <td class="num"><a class="btn secondary" href="https://www.moneycontrol.com/mutual-funds/nav/axis-small-cap-fund-direct-plan/MAA316" target="_blank" rel="noopener" aria-label="Axis Small Cap Fund details">🔗 Details</a></td>
+            </tr>
+            <tr data-pct="10">
+              <td class="idx">6</td>
+              <td>Nippon India ETF Gold BeES</td>
+              <td class="num pct-cell">10%</td>
+              <td class="num amount-cell">–</td>
+              <td class="num"><a class="btn secondary" href="https://www.moneycontrol.com/india/stockpricequote/gold-etf/nipponindiaetfgoldbees/GBE" target="_blank" rel="noopener" aria-label="Gold ETF details">🔗 Details</a></td>
+            </tr>
           </tbody>
           <tfoot>
             <tr>
               <td></td>
               <td>Total</td>
-              <td class="num"><span id="totalPct">0</span>%</td>
+              <td class="num"><span id="totalPct">100</span>%</td>
               <td class="num"><span id="totalAmt">0</span></td>
               <td></td>
             </tr>
@@ -123,8 +206,8 @@
       </div>
 
       <div class="footer-actions">
-        <span class="chip" id="saveBadge">Auto-saved</span>
-        <span class="chip" id="sumBadge">Sum: <span id='sumPctBadge'>0</span>%</span>
+        <span class="chip" id="saveBadge">—</span>
+        <span class="chip" id="sumBadge">Sum: <span id='sumPctBadge'>100</span>%</span>
       </div>
     </section>
 
@@ -228,56 +311,26 @@
       };
       function fmtCurrency(value){ const cur = currencyEl.value || 'INR'; const f = currencyFormatters[cur] || currencyFormatters['INR']; return f.format(isFinite(value)?value:0); }
 
-      function readRows(){ return [...fundBody.querySelectorAll('tr')].map(tr => { const name = tr.querySelector('.fund-name')?.value?.trim()||''; const pct = parseFloat(tr.querySelector('.fund-pct')?.value); return { name, pct: isFinite(pct) ? pct : 0 }; }); }
+  function readRows(){ return [...fundBody.querySelectorAll('tr[data-pct]')].map(tr => { const name = tr.querySelector('td:nth-child(2)')?.textContent?.trim()||''; const pctText = tr.querySelector('.pct-cell')?.textContent?.trim()||''; let pct = parseFloat(pctText.replace('%','')); if(!isFinite(pct)){ pct = parseFloat(tr.getAttribute('data-pct')); } if(isFinite(pct)) tr.setAttribute('data-pct', pct.toString()); return { name, pct: isFinite(pct)?pct:0 }; }); }
 
       function saveState(){ const data = { total: parseFloat(totalAmountEl.value) || 0, currency: currencyEl.value, funds: readRows(), fire: { exp: parseFloat(fireExpEl.value)||0, inf: parseFloat(fireInfEl.value)||6, yrs: parseInt(fireYearsEl.value)||15, ret: parseFloat(fireRetEl.value)||12, step: parseFloat(fireStepEl.value)||0, curr: parseFloat(fireCurrEl.value)||0 } }; localStorage.setItem(stateKey, JSON.stringify(data)); saveBadge.textContent='Saved'; setTimeout(()=>saveBadge.textContent='Auto-saved',1200); }
       function loadState(){ try{ const raw = localStorage.getItem(stateKey); return raw?JSON.parse(raw):null; }catch(e){ return null; } }
 
-      function addRow(fund={name:'', pct:0}){
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="idx"></td>
-          <td><input class="text-input fund-name" type="text" placeholder="e.g., HDFC Flexi Cap" value="${(fund.name||'').replaceAll('"','&quot;')}" /></td>
-          <td class="num">
-            <div class="num-wrap">
-              <input class="num-input fund-pct" type="number" min="0" step="0.01" data-stepkind="pct" value="${isFinite(fund.pct)?fund.pct:0}" />
-              <div class="stepper" data-for="inline"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
-            </div>
-          </td>
-          <td class="num amount-cell">${fmtCurrency(0)}</td>
-          <td class="num row-actions"><button class="btn secondary btn-remove">🗑️ Remove</button></td>`;
-        fundBody.appendChild(tr);
-        const pctInput = tr.querySelector('.fund-pct');
-        attachInlineStepper(pctInput);
-        attachKeyStep(pctInput);
-        tr.querySelector('.fund-name').addEventListener('input', recalc);
-        pctInput.addEventListener('input', recalc);
-        tr.querySelector('.btn-remove').addEventListener('click', () => { tr.remove(); renumber(); recalc(); });
-        renumber();
-        return tr;
-      }
-
-      function renumber(){ [...fundBody.querySelectorAll('tr')].forEach((tr, i) => { tr.querySelector('.idx').textContent = i+1; }); }
-
-      function distributeEqually(){ const rows = [...fundBody.querySelectorAll('tr')]; const n = rows.length || 1; let base = Math.floor((10000 / n)) / 100; let remainder = +(100 - base*n).toFixed(2); rows.forEach((tr, i) => { let p = base + (i === rows.length-1 ? remainder : 0); tr.querySelector('.fund-pct').value = p.toFixed(2); }); recalc(); }
+      // Static list: no add/remove/equal distribution
+      function renumber(){}
+      function distributeEqually(){}
 
       function proportionalAmounts(total, rows){ const sumPct = rows.reduce((s,r)=>s+r.pct,0); if(sumPct <= 0) return rows.map(_=>0); return rows.map(r => total * (r.pct / sumPct)); }
 
-      function recalc(){ const total = parseFloat(totalAmountEl.value) || 0; const rows = readRows(); const sumPct = rows.reduce((s,r)=> s + (isFinite(r.pct)?r.pct:0), 0);
-        const amounts = (Math.abs(sumPct - 100) < 0.0001) ? rows.map(r => total * (r.pct/100)) : proportionalAmounts(total, rows);
-        [...fundBody.querySelectorAll('tr')].forEach((tr, i) => { const amtCell = tr.querySelector('.amount-cell'); const amt = amounts[i] || 0; amtCell.textContent = fmtCurrency(amt); });
-        totalPctEl.textContent = sumPct.toFixed(2).replace(/\.00$/,''); totalAmtEl.textContent = fmtCurrency(amounts.reduce((a,b)=>a+b,0)); sumPctBadge.textContent = sumPct.toFixed(2).replace(/\.00$/,'');
-        if(sumPct === 100) { statusLine.innerHTML = '<span class="success">✅ Perfect! Allocations sum to 100%.</span>'; }
-        else if(sumPct === 0) { statusLine.innerHTML = '<span class="error">Enter allocation percentages or use <b>Distribute Equally</b>.</span>'; }
-        else if(sumPct < 100) { statusLine.innerHTML = `<span class="warn">⚠️ Allocations sum to ${sumPct.toFixed(2)}%. Amounts are scaled proportionally.</span>`; }
-        else { statusLine.innerHTML = `<span class="warn">⚠️ Allocations exceed 100% ( ${sumPct.toFixed(2)}% ). Amounts are scaled proportionally.</span>`; }
-        calcFIRE(); saveState(); }
+      function recalc(){ const total = parseFloat(totalAmountEl.value) || 0; const rows = readRows(); const sumPct = rows.reduce((s,r)=>s+r.pct,0); const amounts = rows.map(r => total * (r.pct/100));
+  [...fundBody.querySelectorAll('tr[data-pct]')].forEach((tr, i) => { const amtCell = tr.querySelector('.amount-cell'); let amt = amounts[i] || 0; amt = Math.round(amt*100)/100; amtCell.textContent = fmtCurrency(amt); });
+        totalPctEl.textContent = sumPct.toFixed(2).replace(/\.00$/,''); totalAmtEl.textContent = fmtCurrency(amounts.reduce((a,b)=>a+b,0)); sumPctBadge.textContent = totalPctEl.textContent; statusLine.innerHTML = sumPct === 100 ? '<span class="success">✅ Allocation totals 100%.</span>' : `<span class="warn">⚠️ Allocation totals ${sumPct.toFixed(2)}%. (Static list)</span>`; calcFIRE(); }
 
-      function clearAll(){ fundBody.innerHTML = ''; totalAmountEl.value = ''; addRow(); addRow(); addRow(); recalc(); }
+  function clearAll(){ totalAmountEl.value = ''; recalc(); }
 
       // === FIRE math with current portfolio offset ===
-      function calcFIRE(){ const exp = parseFloat(fireExpEl.value)||0; const inf = (parseFloat(fireInfEl.value)||6)/100; const yrs = Math.max(1, parseInt(fireYearsEl.value)||15); const ret = (parseFloat(fireRetEl.value)||12)/100; const step = (parseFloat(fireStepEl.value)||0)/100; const curr = parseFloat(fireCurrEl.value)||0; const expAtRet = exp * Math.pow(1+inf, yrs); fireExpRetEl.textContent = fmtCurrency(expAtRet); const corpus = (expAtRet * 12) / DEFAULT_SWR; fireCorpusEl.textContent = fmtCurrency(corpus); const m = yrs*12; const i = ret/12; const currentFV = curr * Math.pow(1+i, m); const neededFV = Math.max(0, corpus - currentFV);
-        function sipForStepup(stepPct){ if(neededFV<=0) return 0; if(stepPct<=0){ const den = (Math.pow(1+i, m)-1)/(i>0?i:1); return neededFV/(den>0?den:1);} let sumFactor=0; for(let t=0;t<m;t++){ const y=Math.floor(t/12); sumFactor += Math.pow(1+stepPct,y)*Math.pow(1+i,m-1-t);} return neededFV/(sumFactor>0?sumFactor:1);} const sip = sipForStepup(step); fireSIPel.textContent = fmtCurrency(sip); }
+      function calcFIRE(){ const exp = parseFloat(fireExpEl.value)||0; const inf = (parseFloat(fireInfEl.value)||6)/100; const yrs = Math.max(1, parseInt(fireYearsEl.value)||15); const ret = (parseFloat(fireRetEl.value)||12)/100; const stepRaw = parseFloat(fireStepEl.value)||0; const step = stepRaw/100; const curr = parseFloat(fireCurrEl.value)||0; const expAtRet = exp * Math.pow(1+inf, yrs); fireExpRetEl.textContent = fmtCurrency(expAtRet); const corpus = (expAtRet * 12) / DEFAULT_SWR; fireCorpusEl.textContent = fmtCurrency(corpus); const m = yrs*12; const i = ret/12; const currentFV = curr * Math.pow(1+i, m); const neededFV = Math.max(0, corpus - currentFV);
+        function sipForStepup(stepPct){ if(neededFV<=0) return 0; if(stepPct<=0){ const den = (Math.pow(1+i, m)-1)/(i>0?i:1); return neededFV/(den>0?den:1);} let sumFactor=0; for(let t=0;t<m;t++){ const y=Math.floor(t/12); sumFactor += Math.pow(1+stepPct,y)*Math.pow(1+i,m-1-t);} return neededFV/(sumFactor>0?sumFactor:1);} const sip = sipForStepup(step); const sipText = fmtCurrency(sip); fireSIPel.textContent = stepRaw>0 ? `${sipText} (with ${stepRaw.toFixed(2).replace(/\.00$/,'')}% step-up each year)` : sipText; }
 
       // Custom steppers (buttons)
       function attachStepperFor(id){ const wrap = document.querySelector(`.stepper[data-for="${id}"]`); if(!wrap) return; const input = document.getElementById(id); if(!input) return; const [up,down] = wrap.querySelectorAll('button'); up.addEventListener('click', ()=> stepInput(input, +1)); down.addEventListener('click', ()=> stepInput(input, -1)); attachKeyStep(input); }
@@ -290,16 +343,14 @@
       function stepInput(input, dir){ const delta = computeDelta(input); const min = (input.min!==''?parseFloat(input.min):-Infinity); const max = (input.max!==''?parseFloat(input.max):Infinity); const cur = parseFloat(input.value||'0')||0; let next = cur + dir*delta; if(next<min) next=min; if(next>max) next=max; input.value = (Math.round(next*100000)/100000).toString(); input.dispatchEvent(new Event('input', {bubbles:true})); }
 
       // Hook buttons and listeners
-      document.getElementById('addRowBtn').addEventListener('click', ()=>{ addRow(); recalc(); });
-      document.getElementById('eqSplitBtn').addEventListener('click', distributeEqually);
-      document.getElementById('clearBtn').addEventListener('click', () => { localStorage.removeItem(stateKey); clearAll(); });
+  // Removed dynamic row buttons
       totalAmountEl.addEventListener('input', recalc); currencyEl.addEventListener('change', ()=>{ recalc(); calcFIRE(); });
       [fireExpEl, fireInfEl, fireYearsEl, fireRetEl, fireStepEl, fireCurrEl].forEach(el => el.addEventListener('input', ()=>{ calcFIRE(); saveState(); }));
 
       // Init
-      const saved = loadState();
-      if(saved){ totalAmountEl.value = saved.total || ''; currencyEl.value = saved.currency || 'INR'; if(saved.funds && saved.funds.length){ saved.funds.forEach(f => addRow(f)); } else { addRow(); addRow(); addRow(); } if(saved.fire){ fireExpEl.value = saved.fire.exp ?? ''; fireInfEl.value = saved.fire.inf ?? 6; fireYearsEl.value = saved.fire.yrs ?? 15; fireRetEl.value = saved.fire.ret ?? 12; fireStepEl.value = saved.fire.step ?? 0; fireCurrEl.value = saved.fire.curr ?? 0; } }
-      else { addRow({name:'Bluechip Fund', pct:40}); addRow({name:'Midcap Fund', pct:35}); addRow({name:'Debt Fund', pct:25}); fireExpEl.value = 50000; fireInfEl.value = 6; fireYearsEl.value = 15; fireRetEl.value = 12; fireStepEl.value = 0; fireCurrEl.value = 0; }
+  const saved = loadState();
+  if(saved){ totalAmountEl.value = saved.total || ''; currencyEl.value = saved.currency || 'INR'; if(saved.fire){ fireExpEl.value = saved.fire.exp ?? ''; fireInfEl.value = saved.fire.inf ?? 6; fireYearsEl.value = saved.fire.yrs ?? 15; fireRetEl.value = saved.fire.ret ?? 12; fireStepEl.value = saved.fire.step ?? 0; fireCurrEl.value = saved.fire.curr ?? 0; } }
+  else { fireExpEl.value = 50000; fireInfEl.value = 6; fireYearsEl.value = 15; fireRetEl.value = 12; fireStepEl.value = 0; fireCurrEl.value = 0; }
 
       // attach steppers + keyboard for top + FIRE fields
       ['totalAmount','fire-exp','fire-inf','fire-years','fire-ret','fire-stepup','fire-curr'].forEach(attachStepperFor);
