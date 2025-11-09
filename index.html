@@ -68,11 +68,18 @@
     .visually-hidden{ position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0 0 0 0) !important; white-space:nowrap !important; border:0 !important; }
 
   /* SPA Tabs */
-  .app-nav{ display:flex; gap:10px; margin-bottom:10px; }
-  .tab-btn{ cursor:pointer; border:1px solid var(--border); background:linear-gradient(180deg, rgba(79,140,255,.18), rgba(79,140,255,.05)); color:var(--ink); padding:8px 14px; border-radius:8px; font-weight:600; font-size:14px; }
-  .tab-btn.active{ background:linear-gradient(180deg, rgba(79,140,255,.35), rgba(79,140,255,.12)); box-shadow:0 0 0 2px rgba(79,140,255,.25) inset; }
-  .app-view{ animation: fade .25s ease; }
-  @keyframes fade{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:translateY(0);} }
+  /* Removed tab navigation styles */
+  .alloc-table{ table-layout:fixed; width:100%; }
+  .alloc-table col.name-col{ width:42%; }
+  .alloc-table col.alloc-col{ width:11%; }
+  .alloc-table col.amount-col{ width:25%; }
+  .alloc-table col.details-col{ width:22%; }
+  @media(max-width:680px){
+    .alloc-table col.name-col{ width:48%; }
+    .alloc-table col.alloc-col{ width:12%; }
+    .alloc-table col.amount-col{ width:24%; }
+    .alloc-table col.details-col{ width:16%; }
+  }
 
     /* Responsive basics (keep tabular layout) */
     @media (max-width: 680px){
@@ -80,7 +87,6 @@
       .wrap{ margin:20px auto; padding:0 14px; }
       .toolbar{ flex-wrap:wrap; }
       .toolbar .field{ flex:1 1 160px; }
-      .toolbar .field .num-wrap{ width:100%; }
       .footer-actions{ flex-wrap:wrap; }
       table{ font-size:13px; }
       thead th{ position:sticky; top:0; background:var(--card); z-index:2; }
@@ -97,22 +103,17 @@
 </head>
 <body>
   <div class="wrap">
-    <nav class="app-nav" aria-label="Main">
-      <button class="tab-btn active" data-view="alloc-view" aria-controls="alloc-view" aria-selected="true" role="tab">Allocations</button>
-      <button class="tab-btn" data-view="fire-view" aria-controls="fire-view" aria-selected="false" role="tab">FIRE Planner</button>
-    </nav>
     <header>
       <h1>Mutual Fund Allocation Calculator</h1>
       <p>Enter a total amount and define your mutual funds with percentage allocations. The table computes the investment per fund in real time. Your entries are saved locally in your browser.</p>
     </header>
 
-  <section class="card app-view active" id="alloc-view" aria-labelledby="calc-heading" role="tabpanel">
+  <section class="card" id="alloc-section" aria-labelledby="calc-heading">
       <div class="toolbar">
         <div class="field">
           <label for="totalAmount">Total Investment Amount</label>
           <div class="num-wrap">
             <input id="totalAmount" class="num-input" type="number" min="0" step="0.01" data-stepkind="amount" placeholder="e.g., 100000" />
-            <div class="stepper" data-for="totalAmount"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
           </div>
         </div>
         <div class="field">
@@ -129,7 +130,14 @@
       <div class="notice" id="statusLine">Static model: preset fund allocation totals 100%. Enter amount to see distribution.</div>
 
       <div style="overflow-x:auto">
-        <table aria-describedby="statusLine">
+        <table class="alloc-table" aria-describedby="statusLine">
+          <colgroup>
+            <col class="idx-col" />
+            <col class="name-col" />
+            <col class="alloc-col" />
+            <col class="amount-col" />
+            <col class="details-col" />
+          </colgroup>
           <thead>
             <tr>
               <th class="idx">#</th>
@@ -204,7 +212,7 @@
     <p class="notice">Note: All data is stored only in your browser (LocalStorage). No data is transmitted.</p>
 
     <!-- FIRE PLANNER SECTION -->
-  <section class="card app-view" id="fire-view" aria-labelledby="fire-heading" role="tabpanel" hidden>
+  <section class="card" id="fire-section" aria-labelledby="fire-heading">
       <h2 id="fire-heading" style="margin:0; padding:14px 16px; border-bottom:1px solid var(--border); font-size:18px;">FIRE Planner <span class="chip">Retirement target & SIP</span></h2>
       <div class="section-body">
         <div class="form-grid">
@@ -212,42 +220,36 @@
             <label for="fire-exp">Current Monthly Expenses</label>
             <div class="num-wrap">
               <input id="fire-exp" class="num-input" type="number" min="0" step="0.01" data-stepkind="amount" placeholder="e.g., 50000" />
-              <div class="stepper" data-for="fire-exp"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
             </div>
           </div>
           <div class="kv">
             <label for="fire-inf">Inflation (annual %)</label>
             <div class="num-wrap">
               <input id="fire-inf" class="num-input" type="number" min="0" step="0.1" data-stepkind="pct" value="6" />
-              <div class="stepper" data-for="fire-inf"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
             </div>
           </div>
           <div class="kv">
             <label for="fire-years">Years to Retirement</label>
             <div class="num-wrap">
               <input id="fire-years" class="num-input" type="number" min="1" step="1" data-stepkind="years" value="15" />
-              <div class="stepper" data-for="fire-years"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
             </div>
           </div>
           <div class="kv">
             <label for="fire-ret">Expected Return (annual %, during accumulation)</label>
             <div class="num-wrap">
               <input id="fire-ret" class="num-input" type="number" min="0" step="0.1" data-stepkind="pct" value="12" />
-              <div class="stepper" data-for="fire-ret"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
             </div>
           </div>
           <div class="kv">
             <label for="fire-stepup">Step-up SIP (% per year)</label>
             <div class="num-wrap">
               <input id="fire-stepup" class="num-input" type="number" min="0" step="0.1" data-stepkind="pct" value="0" />
-              <div class="stepper" data-for="fire-stepup"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
             </div>
           </div>
           <div class="kv">
             <label for="fire-curr">Current Portfolio Amount</label>
             <div class="num-wrap">
               <input id="fire-curr" class="num-input" type="number" min="0" step="0.01" data-stepkind="amount" placeholder="e.g., 3000000" />
-              <div class="stepper" data-for="fire-curr"><button type="button" aria-label="Increase">▲</button><button type="button" aria-label="Decrease">▼</button></div>
             </div>
           </div>
         </div>
@@ -269,14 +271,6 @@
 
   <script>
     (function(){
-      // Tab SPA handling
-      const tabButtons = document.querySelectorAll('.tab-btn');
-      const views = document.querySelectorAll('.app-view');
-      tabButtons.forEach(btn => btn.addEventListener('click', () => {
-        const target = btn.getAttribute('data-view');
-        tabButtons.forEach(b => { b.classList.toggle('active', b===btn); b.setAttribute('aria-selected', b===btn?'true':'false'); });
-        views.forEach(v => { const isActive = v.id === target; v.classList.toggle('active', isActive); if(isActive){ v.removeAttribute('hidden'); } else { v.setAttribute('hidden',''); } });
-      }));
       const fundBody = document.getElementById('fundBody');
       const totalAmountEl = document.getElementById('totalAmount');
       const currencyEl = document.getElementById('currency');
@@ -331,14 +325,7 @@
         function sipForStepup(stepPct){ if(neededFV<=0) return 0; if(stepPct<=0){ const den = (Math.pow(1+i, m)-1)/(i>0?i:1); return neededFV/(den>0?den:1);} let sumFactor=0; for(let t=0;t<m;t++){ const y=Math.floor(t/12); sumFactor += Math.pow(1+stepPct,y)*Math.pow(1+i,m-1-t);} return neededFV/(sumFactor>0?sumFactor:1);} const sip = sipForStepup(step); const sipText = fmtCurrency(sip); fireSIPel.textContent = stepRaw>0 ? `${sipText} (with ${stepRaw.toFixed(2).replace(/\.00$/,'')}% step-up each year)` : sipText; }
 
       // Custom steppers (buttons)
-      function attachStepperFor(id){ const wrap = document.querySelector(`.stepper[data-for="${id}"]`); if(!wrap) return; const input = document.getElementById(id); if(!input) return; const [up,down] = wrap.querySelectorAll('button'); up.addEventListener('click', ()=> stepInput(input, +1)); down.addEventListener('click', ()=> stepInput(input, -1)); attachKeyStep(input); }
-      function attachInlineStepper(input){ const wrap = input?.closest('.num-wrap')?.querySelector('.stepper'); if(!wrap) return; const [up,down] = wrap.querySelectorAll('button'); up.addEventListener('click', ()=> stepInput(input, +1)); down.addEventListener('click', ()=> stepInput(input, -1)); }
-
-      // Keyboard arrows override: +1 for years & pct, +1000 for amount
-      function attachKeyStep(input){ input.addEventListener('keydown', (e)=>{ if(e.key==='ArrowUp'){ e.preventDefault(); stepInput(input, +1); } else if(e.key==='ArrowDown'){ e.preventDefault(); stepInput(input, -1); } }); }
-
-      function computeDelta(input){ const kind = input.getAttribute('data-stepkind'); if(kind==='amount') return 1000; if(kind==='years') return 1; if(kind==='pct') return 1; const def = parseFloat(input.step)||1; return def; }
-      function stepInput(input, dir){ const delta = computeDelta(input); const min = (input.min!==''?parseFloat(input.min):-Infinity); const max = (input.max!==''?parseFloat(input.max):Infinity); const cur = parseFloat(input.value||'0')||0; let next = cur + dir*delta; if(next<min) next=min; if(next>max) next=max; input.value = (Math.round(next*100000)/100000).toString(); input.dispatchEvent(new Event('input', {bubbles:true})); }
+  // Removed steppers and custom arrow key overrides
 
       // Hook buttons and listeners
   // Removed dynamic row buttons
@@ -351,10 +338,7 @@
   else { fireExpEl.value = 50000; fireInfEl.value = 6; fireYearsEl.value = 15; fireRetEl.value = 12; fireStepEl.value = 0; fireCurrEl.value = 0; }
 
       // attach steppers + keyboard for top + FIRE fields
-      ['totalAmount','fire-exp','fire-inf','fire-years','fire-ret','fire-stepup','fire-curr'].forEach(attachStepperFor);
-
-      // also attach keyboard arrow override to top amount
-      attachKeyStep(totalAmountEl);
+  // No stepper initialization needed.
 
       recalc(); calcFIRE();
     })();
