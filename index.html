@@ -314,6 +314,29 @@
           <strong>How this is calculated & a suggested plan:</strong><br/>
           We project your monthly expenses to retirement using your inflation rate. Your FIRE number is the annualised expense at retirement divided by a 4% safe withdrawal rate—meaning a 4% draw from the corpus aims to sustain those expenses. To reach this corpus, we compute a monthly SIP based on your expected return and years to retire. If you add a step-up %, the SIP grows each year and the required starting SIP is lower. We also account for your <em>current portfolio amount</em>, compounding it to retirement and reducing the target accordingly. As a practical plan: keep 12–18 months of expenses in liquid/low-risk instruments, invest surplus via SIPs in a diversified mix of equity index funds and debt funds, review allocations annually, and gradually de-risk as retirement approaches.
         </div>
+        <div style="margin-top:18px; overflow-x:auto;">
+          <table id="projection-table" style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:10px 12px; font-size:12px; color:var(--muted); border-bottom:1px solid var(--border);">Year</th>
+                <th style="text-align:right; padding:10px 12px; font-size:12px; color:var(--muted); border-bottom:1px solid var(--border);">Annual SIP Paid</th>
+                <th style="text-align:right; padding:10px 12px; font-size:12px; color:var(--muted); border-bottom:1px solid var(--border);">Cumulative Principal</th>
+                <th style="text-align:right; padding:10px 12px; font-size:12px; color:var(--muted); border-bottom:1px solid var(--border);">End-Year Value</th>
+                
+              </tr>
+            </thead>
+            <tbody id="projectionBody"></tbody>
+            <tfoot>
+              <tr>
+                <td style="padding:10px 12px; font-weight:600;">Totals</td>
+                <td style="padding:10px 12px; text-align:right; font-weight:600;" id="projTotalSIP">–</td>
+                <td style="padding:10px 12px; text-align:right; font-weight:600;" id="projTotalPrincipal">–</td>
+                <td style="padding:10px 12px; text-align:right; font-weight:600;" id="projTotalValue">–</td>
+                
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -420,6 +443,38 @@
           responsive:true, maintainAspectRatio:false }; 
         if(growthChart){ growthChart.data = chartData; growthChart.options = chartOptions; growthChart.update(); }
         else { growthChart = new Chart(ctx, { type:'pie', data: chartData, options: chartOptions }); }
+
+        buildProjection({ yrs, step, baseSip, curr, retAnnual: ret, corpusTarget: corpus });
+      }
+      // Yearly projection builder
+      function buildProjection({ yrs, step, baseSip, curr, retAnnual, corpusTarget }){
+        const tbody = document.getElementById('projectionBody'); if(!tbody) return; tbody.innerHTML='';
+  const iMonthly = retAnnual/12; let cumulativePrincipal = curr; let totalSIP=0; let totalValue=0; let currentValue = curr; const mYear = 12;
+        for(let y=0;y<yrs;y++){
+          const monthlyBase = baseSip * Math.pow(1+step,y); // SIP for this year before monthly compounding
+          let annualSip = 0;
+          for(let m=0;m<mYear;m++){
+            // Growth applies first to existing value, then contribution (or contribution then growth? Chart assumed contribution then growth?)
+            // In updateChart we did: currentValue = (currentValue + monthlyContribution) * (1+iMonthly);
+            currentValue = (currentValue + monthlyBase) * (1 + iMonthly);
+            annualSip += monthlyBase;
+          }
+          totalSIP += annualSip; cumulativePrincipal += annualSip;
+          totalValue = currentValue; const tr = document.createElement('tr'); tr.innerHTML = `<td style="padding:8px 10px;">${y+1}</td>`+
+            `<td style="padding:8px 10px; text-align:right;">${fmtCurrency(annualSip)}</td>`+
+            `<td style="padding:8px 10px; text-align:right;">${fmtCurrency(cumulativePrincipal)}</td>`+
+            `<td style="padding:8px 10px; text-align:right;">${fmtCurrency(currentValue)}</td>`;
+          tbody.appendChild(tr);
+        }
+        // Totals row values
+        const totSIPEl = document.getElementById('projTotalSIP');
+        const totPrinEl = document.getElementById('projTotalPrincipal');
+        const totValEl = document.getElementById('projTotalValue');
+        
+        if(totSIPEl) totSIPEl.textContent = fmtCurrency(totalSIP);
+        if(totPrinEl) totPrinEl.textContent = fmtCurrency(cumulativePrincipal);
+        if(totValEl) totValEl.textContent = fmtCurrency(totalValue);
+        
       }
       // Poll until Chart.js loaded then initial draw
       const chartInitInterval = setInterval(()=>{ if(window.Chart){ clearInterval(chartInitInterval); updateChart(); } }, 150);
