@@ -4,6 +4,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Mutual Fund allocation and FIRE number calculator with preferred researched funds, SIP planning, and interactive chart visualization." />
+  <meta name="keywords" content="mutual fund allocation calculator, FIRE number, SIP calculator, investment planning, India, retirement corpus" />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://example.com/mutual-fund-fire-calculator" />
+  <meta property="og:title" content="Mutual Fund Allocation & FIRE Calculator" />
+  <meta property="og:description" content="Calculate allocations, SIP, and FIRE target with researched preferred funds. Includes interactive growth chart." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://example.com/mutual-fund-fire-calculator" />
+  <meta property="og:image" content="https://example.com/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Mutual Fund Allocation & FIRE Calculator" />
+  <meta name="twitter:description" content="Preferred researched funds, SIP planning and FIRE number calculator." />
+  <meta name="twitter:image" content="https://example.com/og-image.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Mutual Fund Allocation & FIRE Calculator",
+    "description": "Interactive mutual fund allocation and FIRE number calculator featuring preferred researched funds, SIP planning, and corpus visualization.",
+    "url": "https://example.com/mutual-fund-fire-calculator",
+    "publisher": {"@type": "Organization", "name": "YourSite"},
+    "mainEntity": {
+      "@type": "FinancialProduct",
+      "name": "Mutual Fund Portfolio & FIRE Planner",
+      "description": "Helps investors plan allocations and retirement corpus using SIPs and preferred researched funds.",
+      "audience": {"@type": "Audience", "audienceType": "Investors"}
+    }
+  }
+  </script>
   <title>Mutual Fund Allocation Calculator</title>
   <style>
     :root{ --bg:#0b1220; --card:#121a2b; --ink:#e7eefc; --muted:#a9b3c7; --brand:#4f8cff; --ok:#1ec28b; --warn:#ffb020; --err:#ff6161; --border:#23304b; --chip:#15233b; }
@@ -127,7 +156,8 @@
         </div>
       </div>
 
-      <div class="notice" id="statusLine">Static model: preset fund allocation totals 100%. Enter amount to see distribution.</div>
+  <div class="notice" id="statusLine">Static model: preset fund allocation totals 100%. Enter amount to see distribution.</div>
+  <p id="allocation-intro" style="margin:10px 16px 4px; font-size:13px; color:var(--muted); line-height:1.5">This 100% sample allocation illustrates how complementary fund categories can combine: a core flexi / broad market equity sleeve, index exposure for cost efficiency, tax-saving ELSS, mid & small cap for higher growth potential, international diversification, and a gold hedge to damp volatility. Use it as a learning reference and tune percentages to fit your own horizon, liquidity needs, and risk appetite.</p>
 
       <div style="overflow-x:auto">
         <table class="alloc-table" aria-describedby="statusLine">
@@ -207,6 +237,7 @@
         <span class="chip" id="saveBadge">—</span>
         <span class="chip" id="sumBadge">Sum: <span id='sumPctBadge'>100</span>%</span>
       </div>
+  
     </section>
 
     <p class="notice">Note: All data is stored only in your browser (LocalStorage). No data is transmitted.</p>
@@ -259,6 +290,25 @@
           <div class="out"><small>FIRE Number (Target Corpus)</small><strong id="fire-corpus">–</strong></div>
           <div class="out"><small>Required Monthly SIP <span id="fire-sip-label">(Base, Year 1)</span></small><strong id="fire-sip">–</strong></div>
         </div>
+        <div style="margin-top:16px; padding:12px 14px; border:1px dashed var(--border); border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)); display:grid; grid-template-columns: 1fr 1fr; gap:12px; align-items:start;">
+          <div style="display:flex; flex-direction:column; gap:8px; font-size:12px;">
+            <div class="out" style="margin:0; padding:6px 10px;">
+              <small id="chart-invested-label">Amount Invested</small>
+              <strong id="chart-invested">–</strong>
+            </div>
+            <div class="out" style="margin:0; padding:6px 10px;">
+              <small>Interest / Growth Earned</small>
+              <strong id="chart-growth">–</strong>
+            </div>
+            <div class="out" style="margin:0; padding:6px 10px;">
+              <small>Future Value Total</small>
+              <strong id="chart-fv">–</strong>
+            </div>
+          </div>
+          <div style="min-height:220px;">
+            <canvas id="growthChart" aria-label="Investment & Returns Composition" role="img" height="220"></canvas>
+          </div>
+        </div>
         <div class="notice">Assumptions: monthly compounding; SIP at end of month; FIRE number uses a default 4% safe withdrawal rate (SWR). Adjust any inputs above.</div>
         <div class="notice" id="fire-explain" style="border-top:1px dashed var(--border); margin-top:8px;">
           <strong>How this is calculated & a suggested plan:</strong><br/>
@@ -270,6 +320,10 @@
   </div>
 
   <script>
+    /* Chart.js CDN */
+    const scriptChart = document.createElement('script');
+    scriptChart.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+    document.head.appendChild(scriptChart);
     (function(){
       const fundBody = document.getElementById('fundBody');
       const totalAmountEl = document.getElementById('totalAmount');
@@ -323,14 +377,60 @@
       // === FIRE math with current portfolio offset ===
       function calcFIRE(){ const exp = parseFloat(fireExpEl.value)||0; const inf = (parseFloat(fireInfEl.value)||6)/100; const yrs = Math.max(1, parseInt(fireYearsEl.value)||15); const ret = (parseFloat(fireRetEl.value)||12)/100; const stepRaw = parseFloat(fireStepEl.value)||0; const step = stepRaw/100; const curr = parseFloat(fireCurrEl.value)||0; const expAtRet = exp * Math.pow(1+inf, yrs); fireExpRetEl.textContent = fmtCurrency(expAtRet); const corpus = (expAtRet * 12) / DEFAULT_SWR; fireCorpusEl.textContent = fmtCurrency(corpus); const m = yrs*12; const i = ret/12; const currentFV = curr * Math.pow(1+i, m); const neededFV = Math.max(0, corpus - currentFV);
         function sipForStepup(stepPct){ if(neededFV<=0) return 0; if(stepPct<=0){ const den = (Math.pow(1+i, m)-1)/(i>0?i:1); return neededFV/(den>0?den:1);} let sumFactor=0; for(let t=0;t<m;t++){ const y=Math.floor(t/12); sumFactor += Math.pow(1+stepPct,y)*Math.pow(1+i,m-1-t);} return neededFV/(sumFactor>0?sumFactor:1);} const sip = sipForStepup(step); const sipText = fmtCurrency(sip); fireSIPel.textContent = stepRaw>0 ? `${sipText} (with ${stepRaw.toFixed(2).replace(/\.00$/,'')}% step-up each year)` : sipText; }
+      // Chart logic
+      let growthChart;
+      function updateChart(){
+        if(!window.Chart) return; // Chart.js not loaded yet
+        const exp = parseFloat(fireExpEl.value)||0; const inf = (parseFloat(fireInfEl.value)||6)/100; const yrs = Math.max(1, parseInt(fireYearsEl.value)||15); const ret = (parseFloat(fireRetEl.value)||12)/100; const stepRaw = parseFloat(fireStepEl.value)||0; const step = stepRaw/100; const curr = parseFloat(fireCurrEl.value)||0; const corpus = (exp * Math.pow(1+inf, yrs) * 12) / DEFAULT_SWR; const m = yrs*12; const i = ret/12; const currentFV = curr * Math.pow(1+i, m); const neededFV = Math.max(0, corpus - currentFV);
+        // Approx future value from SIP with step-up (reuse same loop)
+        let fvSIP=0; let baseSip; // solve backwards using sipForStepup logic similar to calcFIRE
+        function sipForStepup(stepPct){ if(neededFV<=0) return 0; if(stepPct<=0){ const den=(Math.pow(1+i,m)-1)/(i>0?i:1); return neededFV/(den>0?den:1);} let sumFactor=0; for(let t=0;t<m;t++){ const y=Math.floor(t/12); sumFactor += Math.pow(1+stepPct,y)*Math.pow(1+i,m-1-t);} return neededFV/(sumFactor>0?sumFactor:1);} baseSip = sipForStepup(step);
+        for(let t=0;t<m;t++){ const y=Math.floor(t/12); const contrib = baseSip * Math.pow(1+step,y); fvSIP += contrib * Math.pow(1+i, m-1-t); }
+        // Principal contributed via SIPs (sum of raw contributions)
+        let sipPrincipal = 0; for(let y=0;y<yrs;y++){ const yearlySip = baseSip * Math.pow(1+step,y); sipPrincipal += yearlySip * 12; }
+        const totalFuture = currentFV + fvSIP;
+        const investedPrincipal = curr + sipPrincipal;
+        const growthEarned = Math.max(0, totalFuture - investedPrincipal);
+        // Update metric DOM elements
+        const investedEl = document.getElementById('chart-invested');
+        const growthEl = document.getElementById('chart-growth');
+        const fvEl = document.getElementById('chart-fv');
+        const investedLabelEl = document.getElementById('chart-invested-label');
+        if(investedLabelEl){
+          if(curr>0 && sipPrincipal>0) investedLabelEl.textContent = 'Amount Invested (Corpus + SIP Principal)';
+          else if(curr>0 && sipPrincipal<=0) investedLabelEl.textContent = 'Amount Invested (Existing Corpus)';
+          else if(curr<=0 && sipPrincipal>0) investedLabelEl.textContent = 'Amount Invested (SIP Principal)';
+          else investedLabelEl.textContent = 'Amount Invested';
+        }
+        if(investedEl) investedEl.textContent = fmtCurrency(investedPrincipal);
+        if(growthEl) growthEl.textContent = fmtCurrency(growthEarned);
+        if(fvEl) fvEl.textContent = fmtCurrency(totalFuture);
+  // Two-slice chart: Invested Principal vs Growth Earned
+  const dataSlices = [];
+  const colors = ['#4f8cff','#1ec28b'];
+  if(investedPrincipal>0) dataSlices.push({label:'Amount Invested', value:investedPrincipal});
+  if(growthEarned>0) dataSlices.push({label:'Return Generated', value:growthEarned});
+  if(dataSlices.length === 0){ dataSlices.push({label:'No Data', value:1}); }
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        const chartData = {
+          labels: dataSlices.map(s=>s.label),
+          datasets:[{ data: dataSlices.map(s=> Math.round(s.value)), backgroundColor: colors.slice(0,dataSlices.length), borderColor:'#23304b', borderWidth:1 }]
+        };
+        const chartOptions = { plugins:{ legend:{ position:'bottom' }, tooltip:{ callbacks:{ label:(ctx)=> `${ctx.label}: ${fmtCurrency(ctx.parsed)}` } } },
+          responsive:true, maintainAspectRatio:false }; 
+        if(growthChart){ growthChart.data = chartData; growthChart.options = chartOptions; growthChart.update(); }
+        else { growthChart = new Chart(ctx, { type:'pie', data: chartData, options: chartOptions }); }
+      }
+      // Poll until Chart.js loaded then initial draw
+      const chartInitInterval = setInterval(()=>{ if(window.Chart){ clearInterval(chartInitInterval); updateChart(); } }, 150);
 
       // Custom steppers (buttons)
   // Removed steppers and custom arrow key overrides
 
       // Hook buttons and listeners
   // Removed dynamic row buttons
-      totalAmountEl.addEventListener('input', recalc); currencyEl.addEventListener('change', ()=>{ recalc(); calcFIRE(); });
-      [fireExpEl, fireInfEl, fireYearsEl, fireRetEl, fireStepEl, fireCurrEl].forEach(el => el.addEventListener('input', ()=>{ calcFIRE(); saveState(); }));
+  totalAmountEl.addEventListener('input', ()=>{ recalc(); }); currencyEl.addEventListener('change', ()=>{ recalc(); calcFIRE(); updateChart(); });
+  [fireExpEl, fireInfEl, fireYearsEl, fireRetEl, fireStepEl, fireCurrEl].forEach(el => el.addEventListener('input', ()=>{ calcFIRE(); updateChart(); saveState(); }));
 
       // Init
   const saved = loadState();
@@ -340,7 +440,7 @@
       // attach steppers + keyboard for top + FIRE fields
   // No stepper initialization needed.
 
-      recalc(); calcFIRE();
+      recalc(); calcFIRE(); updateChart();
     })();
   </script>
 </body>
