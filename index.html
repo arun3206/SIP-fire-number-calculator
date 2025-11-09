@@ -67,38 +67,24 @@
     /* Accessibility helpers */
     .visually-hidden{ position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0 0 0 0) !important; white-space:nowrap !important; border:0 !important; }
 
-    /* Mobile responsiveness */
+  /* SPA Tabs */
+  .app-nav{ display:flex; gap:10px; margin-bottom:10px; }
+  .tab-btn{ cursor:pointer; border:1px solid var(--border); background:linear-gradient(180deg, rgba(79,140,255,.18), rgba(79,140,255,.05)); color:var(--ink); padding:8px 14px; border-radius:8px; font-weight:600; font-size:14px; }
+  .tab-btn.active{ background:linear-gradient(180deg, rgba(79,140,255,.35), rgba(79,140,255,.12)); box-shadow:0 0 0 2px rgba(79,140,255,.25) inset; }
+  .app-view{ animation: fade .25s ease; }
+  @keyframes fade{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:translateY(0);} }
+
+    /* Responsive basics (keep tabular layout) */
     @media (max-width: 680px){
       body{ font-size:15px; }
       .wrap{ margin:20px auto; padding:0 14px; }
-      .toolbar{ flex-direction: column; align-items: stretch; }
-      .toolbar .field{ width:100%; }
+      .toolbar{ flex-wrap:wrap; }
+      .toolbar .field{ flex:1 1 160px; }
       .toolbar .field .num-wrap{ width:100%; }
-      .toolbar .btn{ width:100%; justify-content:center; }
-      .footer-actions{ flex-direction:column; }
-      .footer-actions .chip{ width:100%; text-align:center; }
-      /* Table -> stacked cards */
-      table{ border:0; }
-      thead, tfoot{ display:none; }
-      tbody tr{ display:block; border:1px solid var(--border); margin-bottom:12px; border-radius:12px; background:var(--chip); padding:8px 10px; }
-      tbody tr .idx{ display:none; }
-      tbody td{ display:flex; align-items:center; padding:6px 4px; border-bottom:0; }
-      tbody td.amount-cell{ justify-content:space-between; }
-      tbody td.amount-cell::before{ content:'Amount'; font-size:12px; color:var(--muted); }
-      tbody td:nth-child(2){ width:100%; }
-      tbody td:nth-child(3){ width:100%; }
-      tbody td:nth-child(4){ width:100%; }
-      .row-actions{ width:100%; justify-content:flex-end; }
-      .row-actions .btn{ flex:1; }
-      .notice{ font-size:12px; }
-      .num-input{ padding:12px 14px; }
-      .stepper{ right:8px; }
-      .card{ margin-top:24px; box-shadow: 0 10px 24px rgba(0,0,0,.35); }
-      /* FIRE grid adjustments */
-      .form-grid{ grid-template-columns: 1fr; }
-      .kv label{ font-size:11px; }
-      .out{ flex-direction:column; align-items:flex-start; gap:4px; }
-      .out strong{ font-size:16px; }
+      .footer-actions{ flex-wrap:wrap; }
+      table{ font-size:13px; }
+      thead th{ position:sticky; top:0; background:var(--card); z-index:2; }
+      .out strong{ font-size:15px; }
     }
     /* Larger mobile / small tablets */
     @media (min-width:681px) and (max-width:859px){
@@ -111,12 +97,16 @@
 </head>
 <body>
   <div class="wrap">
+    <nav class="app-nav" aria-label="Main">
+      <button class="tab-btn active" data-view="alloc-view" aria-controls="alloc-view" aria-selected="true" role="tab">Allocations</button>
+      <button class="tab-btn" data-view="fire-view" aria-controls="fire-view" aria-selected="false" role="tab">FIRE Planner</button>
+    </nav>
     <header>
       <h1>Mutual Fund Allocation Calculator</h1>
       <p>Enter a total amount and define your mutual funds with percentage allocations. The table computes the investment per fund in real time. Your entries are saved locally in your browser.</p>
     </header>
 
-    <section class="card" aria-labelledby="calc-heading">
+  <section class="card app-view active" id="alloc-view" aria-labelledby="calc-heading" role="tabpanel">
       <div class="toolbar">
         <div class="field">
           <label for="totalAmount">Total Investment Amount</label>
@@ -214,7 +204,7 @@
     <p class="notice">Note: All data is stored only in your browser (LocalStorage). No data is transmitted.</p>
 
     <!-- FIRE PLANNER SECTION -->
-    <section class="card" aria-labelledby="fire-heading">
+  <section class="card app-view" id="fire-view" aria-labelledby="fire-heading" role="tabpanel" hidden>
       <h2 id="fire-heading" style="margin:0; padding:14px 16px; border-bottom:1px solid var(--border); font-size:18px;">FIRE Planner <span class="chip">Retirement target & SIP</span></h2>
       <div class="section-body">
         <div class="form-grid">
@@ -279,6 +269,14 @@
 
   <script>
     (function(){
+      // Tab SPA handling
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const views = document.querySelectorAll('.app-view');
+      tabButtons.forEach(btn => btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-view');
+        tabButtons.forEach(b => { b.classList.toggle('active', b===btn); b.setAttribute('aria-selected', b===btn?'true':'false'); });
+        views.forEach(v => { const isActive = v.id === target; v.classList.toggle('active', isActive); if(isActive){ v.removeAttribute('hidden'); } else { v.setAttribute('hidden',''); } });
+      }));
       const fundBody = document.getElementById('fundBody');
       const totalAmountEl = document.getElementById('totalAmount');
       const currencyEl = document.getElementById('currency');
